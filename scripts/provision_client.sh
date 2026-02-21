@@ -11,9 +11,9 @@ SSH_PUB_KEY="${NFS_LAB_SSH_PUB_KEY:-}"
 echo "==> [nfsclient] Starting provisioning ..."
 echo "==> [nfsclient] LAUNCH_DASHBOARD=${LAUNCH_DASHBOARD}"
 
-# ── 1. Install nfs-utils ──────────────────────────────────────────────────────
-echo "==> [nfsclient] Installing nfs-utils ..."
-dnf install -y -q nfs-utils
+# ── 1. Install nfs-utils and build tools ─────────────────────────────────────
+echo "==> [nfsclient] Installing nfs-utils and build tools ..."
+dnf install -y -q nfs-utils gcc gcc-c++ make python3
 
 # ── 2. Create devuser ─────────────────────────────────────────────────────────
 echo "==> [nfsclient] Creating devuser account ..."

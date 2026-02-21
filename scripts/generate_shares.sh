@@ -80,8 +80,8 @@ generate_files() {
     local fname="${tmpl//\{N\}/$i}"
     local fpath="${dir}/${fname}"
     if [ ! -f "${fpath}" ]; then
-      printf "# %s\n# Generated sample content for %s - file %d\nThis file is part of the %s department data store.\nGenerated: $(date -u +%%Y-%%m-%%dT%%H:%%M:%%SZ)\n" \
-        "${fname}" "${dept}" "${i}" "${dept}" > "${fpath}"
+      printf "# %s\n# Generated sample content for %s - file %d\nThis file is part of the %s department data store.\nGenerated: %s\n" \
+        "${fname}" "${dept}" "${i}" "${dept}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "${fpath}"
     fi
   done
 }

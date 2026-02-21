@@ -32,10 +32,12 @@ fi
 # ── 2. Install Node.js via nvm ────────────────────────────────────────────────
 echo "==> [bootstrap] Checking Node.js installation ..."
 
-# Source nvm if it exists
+# Source nvm if it exists (nvm is not set -u safe)
 if [ -s "${NVM_DIR}/nvm.sh" ]; then
+  set +u
   # shellcheck source=/dev/null
   source "${NVM_DIR}/nvm.sh"
+  set -u
 fi
 
 NODE_INSTALLED=false
@@ -49,21 +51,57 @@ if [ "${NODE_INSTALLED}" = "false" ]; then
   echo "==> [bootstrap] Installing nvm ..."
   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 
-  # Source nvm for current session
+  # Source nvm for current session (nvm is not set -u safe)
   export NVM_DIR="${HOME}/.nvm"
+  set +u
   # shellcheck source=/dev/null
   [ -s "${NVM_DIR}/nvm.sh" ] && source "${NVM_DIR}/nvm.sh"
 
-  echo "==> [bootstrap] Installing Node.js LTS ..."
-  nvm install --lts
-  nvm use --lts
+  echo "==> [bootstrap] Installing Node.js 22 LTS ..."
+  nvm install 22
+  nvm use 22
+  set -u
   NODE_VERSION=$(node -v)
   echo "==> [bootstrap] Node.js installed: ${NODE_VERSION}"
+  # Symlink into /usr/local/bin so node is findable without nvm in PATH
+  ln -sf "$(command -v node)" /usr/local/bin/node
+  ln -sf "$(command -v npm)" /usr/local/bin/npm
 else
   NODE_VERSION=$(node -v)
 fi
 
-# ── 3. npm install in client and server ───────────────────────────────────────
+# ── 3. npm install – node_modules on local ext4 to avoid vboxsf symlink errors ──
+# vboxsf (VirtualBox shared folders) returns EPERM on symlink() syscalls.
+# --no-bin-links only suppresses .bin/ entries; many packages (vite, esbuild,
+# better-sqlite3 native build) still create internal symlinks and will fail.
+# Fix: bind-mount local ext4 directories over the vboxsf node_modules paths.
+# npm writes to ext4 transparently; source files stay on vboxsf for live editing.
+
+is_vboxsf=false
+if stat -f -c %T "${DASHBOARD_DIR}" 2>/dev/null | grep -q "vboxsf"; then
+  is_vboxsf=true
+fi
+
+if [ "${is_vboxsf}" = "true" ]; then
+  echo "==> [bootstrap] vboxsf detected – bind-mounting node_modules onto local ext4 ..."
+  LOCAL_MOD_BASE="/home/devuser/.nas-dashboard-modules"
+  mkdir -p "${LOCAL_MOD_BASE}/client/node_modules" \
+           "${LOCAL_MOD_BASE}/server/node_modules"
+  mkdir -p "${DASHBOARD_DIR}/client/node_modules" \
+           "${DASHBOARD_DIR}/server/node_modules"
+
+  if ! mountpoint -q "${DASHBOARD_DIR}/client/node_modules" 2>/dev/null; then
+    mount --bind "${LOCAL_MOD_BASE}/client/node_modules" \
+                 "${DASHBOARD_DIR}/client/node_modules"
+    echo "==> [bootstrap] Bind-mounted client/node_modules → ext4"
+  fi
+  if ! mountpoint -q "${DASHBOARD_DIR}/server/node_modules" 2>/dev/null; then
+    mount --bind "${LOCAL_MOD_BASE}/server/node_modules" \
+                 "${DASHBOARD_DIR}/server/node_modules"
+    echo "==> [bootstrap] Bind-mounted server/node_modules → ext4"
+  fi
+fi
+
 echo "==> [bootstrap] Running npm install in client/ ..."
 npm install --prefix "${DASHBOARD_DIR}/client"
 
@@ -212,7 +250,7 @@ if [ "${LAUNCH_DASHBOARD}" = "true" ]; then
     --unit=nas-dashboard \
     --uid="$(id -u devuser)" \
     --working-directory="${DASHBOARD_DIR}" \
-    /bin/bash -c "source ${DEVUSER_NVM} && nvm use --lts && npm run dev" \
+    /bin/bash -c "source ${DEVUSER_NVM} && nvm use 22 && npm run dev" \
     2>/dev/null || true
 
   # Wait up to 15 seconds for port 3000

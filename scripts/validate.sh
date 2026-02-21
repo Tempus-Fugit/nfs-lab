@@ -73,9 +73,9 @@ if command -v node &>/dev/null; then
   NODE_VER=$(node -v 2>/dev/null || echo "unknown")
   check "Node.js installed (${NODE_VER})" "pass"
 else
-  # Also check via nvm for devuser
-  if [ -s "/home/devuser/.nvm/nvm.sh" ]; then
-    NODE_VER=$(sudo -i -u devuser bash -c "source ~/.nvm/nvm.sh && node -v" 2>/dev/null || echo "")
+  # bootstrap.sh installs nvm as root → check /root/.nvm
+  if [ -s "/root/.nvm/nvm.sh" ]; then
+    NODE_VER=$(bash -c "source /root/.nvm/nvm.sh && node -v" 2>/dev/null || echo "")
     if [ -n "${NODE_VER}" ]; then
       check "Node.js installed via nvm (${NODE_VER})" "pass"
     else

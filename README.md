@@ -311,6 +311,41 @@ vagrant ssh nfsclient -- "VBoxClient --version"
    vagrant ssh nfsclient -- "LAUNCH_DASHBOARD=true sudo bash /vagrant/scripts/bootstrap.sh"
    ```
 
+### npm install fails during provisioning (vboxsf symlink error)
+
+VirtualBox shared folders (vboxsf) cannot create symlinks. bootstrap.sh handles this
+automatically by bind-mounting local ext4 directories over the `node_modules` paths
+inside the vboxsf mount, so npm writes to native ext4 where symlinks work normally.
+
+During provisioning you should see:
+
+```
+==> nfsclient: ==> [bootstrap] vboxsf detected – bind-mounting node_modules onto local ext4 ...
+==> nfsclient: ==> [bootstrap] Bind-mounted client/node_modules → ext4
+==> nfsclient: ==> [bootstrap] Bind-mounted server/node_modules → ext4
+==> nfsclient: added N packages ...
+```
+
+If `npm install` still fails, check that bootstrap.sh is running as root (it is by
+default via the Vagrant shell provisioner — do not run it as devuser directly).
+
+**After a VM reboot (not destroy)** the bind mounts are gone but the modules are still
+present on ext4 at `/home/devuser/.nas-dashboard-modules/`. Re-run bootstrap to
+restore them and restart the dashboard:
+
+```bash
+vagrant ssh nfsclient -- "sudo bash /vagrant/scripts/bootstrap.sh"
+```
+
+To verify the bind mounts are active:
+
+```bash
+vagrant ssh nfsclient -- "mount | grep nas-dashboard"
+```
+
+You should see two `bind` entries — one for `client/node_modules` and one for
+`server/node_modules`.
+
 ### VM gets wrong IP / network conflict
 
 If `192.168.56.x` conflicts with an existing host network, edit `Vagrantfile` and change the IPs in the `private_network` lines and update `filers.json` accordingly.
