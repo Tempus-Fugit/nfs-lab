@@ -1,0 +1,11 @@
+# SSH keypair - generated at runtime, never committed
+ssh/id_rsa
+ssh/id_rsa.pub
+
+# Vagrant
+.vagrant/
+vagrantBoxes/*.box
+
+# OS
+.DS_Store
+Thumbs.db
