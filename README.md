@@ -48,6 +48,9 @@ All three VMs are provisioned. The NFS servers export their shares. The client m
 ```bash
 LAUNCH_DASHBOARD=true vagrant up
 ```
+```powershell
+$env:LAUNCH_DASHBOARD = "true"
+```
 
 After provisioning completes, the dashboard will be available at:
 
