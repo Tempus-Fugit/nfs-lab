@@ -15,7 +15,7 @@ end
 SSH_PUB_KEY = File.exist?(SSH_KEY_PUBLIC) ? File.read(SSH_KEY_PUBLIC).strip : ""
 
 # Pass LAUNCH_DASHBOARD from host environment through to provisioner.
-LAUNCH_DASHBOARD = ENV.fetch("LAUNCH_DASHBOARD", "false")
+# LAUNCH_DASHBOARD = ENV.fetch("LAUNCH_DASHBOARD", "false")
 
 # Optional: prefer local box files to avoid cloud download issues.
 BOX_DIR = ENV.fetch("NFS_LAB_BOX_DIR", File.join(File.dirname(__FILE__), "vagrantBoxes"))
@@ -39,10 +39,10 @@ def resolve_local_box(box_name, env_key, box_dir)
 end
 
 ALPINE_BOX = resolve_local_box("generic/alpine319", "NFS_LAB_BOX_ALPINE", BOX_DIR)
-ROCKY_BOX  = resolve_local_box("generic/rocky9", "NFS_LAB_BOX_ROCKY", BOX_DIR)
+# ROCKY_BOX  = resolve_local_box("generic/rocky9", "NFS_LAB_BOX_ROCKY", BOX_DIR)
 
 puts "==> Using local box for generic/alpine319: #{ALPINE_BOX}" if ALPINE_BOX
-puts "==> Using local box for generic/rocky9: #{ROCKY_BOX}" if ROCKY_BOX
+# puts "==> Using local box for generic/rocky9: #{ROCKY_BOX}" if ROCKY_BOX
 
 Vagrant.configure("2") do |config|
 
@@ -106,37 +106,37 @@ Vagrant.configure("2") do |config|
   # nfsclient must not start provisioning until nfs1 and nfs2 are done #
   # (Vagrant provisions VMs in definition order by default)            #
   # ------------------------------------------------------------------ #
-  config.vm.define "nfsclient" do |client|
-    client.vm.box      = "generic/rocky9"
-    client.vm.box_url  = ROCKY_BOX if ROCKY_BOX
-    client.vm.hostname = "nfsclient"
-    client.vm.network  "private_network", ip: "192.168.56.20"
+  # config.vm.define "nfsclient" do |client|
+  #   client.vm.box      = "generic/rocky9"
+  #   client.vm.box_url  = ROCKY_BOX if ROCKY_BOX
+  #   client.vm.hostname = "nfsclient"
+  #   client.vm.network  "private_network", ip: "192.168.56.20"
 
-    client.vm.provider "virtualbox" do |vb|
-      vb.name   = "nfs-lab-nfsclient"
-      vb.memory = 1024
-      vb.cpus   = 1
-    end
+  #   client.vm.provider "virtualbox" do |vb|
+  #     vb.name   = "nfs-lab-nfsclient"
+  #     vb.memory = 1024
+  #     vb.cpus   = 1
+  #   end
 
-    # Live two-way shared folder: ../nas-dashboard → /opt/nas-dashboard
-    # Changes on either side are reflected immediately.
-    client.vm.synced_folder "../nas-dashboard", "/opt/nas-dashboard",
-      type:   "virtualbox",
-      create: true
+  #   # Live two-way shared folder: ../nas-dashboard → /opt/nas-dashboard
+  #   # Changes on either side are reflected immediately.
+  #   client.vm.synced_folder "../nas-dashboard", "/opt/nas-dashboard",
+  #     type:   "virtualbox",
+  #     create: true
 
-    # Default /vagrant synced folder kept for script access (validate.sh, bootstrap.sh)
-    client.vm.synced_folder ".", "/vagrant", type: "virtualbox"
+  #   # Default /vagrant synced folder kept for script access (validate.sh, bootstrap.sh)
+  #   client.vm.synced_folder ".", "/vagrant", type: "virtualbox"
 
-    client.vm.provision "shell",
-      path: "scripts/provision_client.sh",
-      env:  { "LAUNCH_DASHBOARD" => LAUNCH_DASHBOARD, "NFS_LAB_SSH_PUB_KEY" => SSH_PUB_KEY }
-  end
+  #   client.vm.provision "shell",
+  #     path: "scripts/provision_client.sh",
+  #     env:  { "LAUNCH_DASHBOARD" => LAUNCH_DASHBOARD, "NFS_LAB_SSH_PUB_KEY" => SSH_PUB_KEY }
+  # end
 
-  # Print dashboard URL after everything is up if LAUNCH_DASHBOARD is set
-  if LAUNCH_DASHBOARD == "true"
-    config.trigger.after :up do |trigger|
-      trigger.info = "Dashboard running at: http://192.168.56.20:3000"
-    end
-  end
+  # # Print dashboard URL after everything is up if LAUNCH_DASHBOARD is set
+  # if LAUNCH_DASHBOARD == "true"
+  #   config.trigger.after :up do |trigger|
+  #     trigger.info = "Dashboard running at: http://192.168.56.20:3000"
+  #   end
+  # end
 
 end
